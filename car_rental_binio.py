@@ -413,12 +413,12 @@ class App:
             r = self.customers.unpack(raw)
             print(f"[Customer] id={r['cus_id']} name={r['name']} id_card={r['id_card']} phone={r['phone']} birth={int_to_ymd(r['birth_ymd'])} gender={r['gender']}")
         elif t.startswith('car'):
-            raw = self.cars.read_record(i);
+            raw = self.cars.read_record(i)
             if not raw: print('! ไม่พบ'); return
             r = self.cars.unpack(raw)
             print(f"[Car] id={r['car_id']} plate={r['license']} brand={r['brand']} model={r['model']} year={r['year']} rate={r['rate_cents']/100:.2f} status={CAR_STATUS[r['status']]}")
         else:
-            raw = self.contracts.read_record(i);
+            raw = self.contracts.read_record(i)
             if not raw: print('! ไม่พบ'); return
             r = self.contracts.unpack(raw)
             print(f"[Contract] id={r['rent_id']} cus_id={r['cus_id']} car_id={r['car_id']} rent={int_to_ymd(r['rent_ymd'])} return={int_to_ymd(r['return_ymd'])} total={r['total_cents']/100:.2f} returned={r['returned']}")
