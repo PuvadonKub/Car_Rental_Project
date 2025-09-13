@@ -428,7 +428,7 @@ class App:
         if t.startswith('cust'):
             for _,raw in self.customers.iter_active():
                 r=self.customers.unpack(raw)
-                print(f"{r['cus_id']:>4} | {r['name']:<24} | {r['phone']}")
+                print(f"{r['cus_id']:>4} | {r['name']:<24} | {r['phone']} | {r['birth_ymd']} | {r['gender']}")
         elif t.startswith('car'):
             for _,raw in self.cars.iter_active():
                 r=self.cars.unpack(raw)
