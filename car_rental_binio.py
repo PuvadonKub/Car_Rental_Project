@@ -549,7 +549,10 @@ class App:
                 elif c=='5':
                     out=os.path.join(os.path.dirname(self.customers.path),'report.txt'); self.generate_report(out)
                 elif c=='0':
-                    print('บันทึกและออก...'); self.close(); break
+                    out=os.path.join(os.path.dirname(self.customers.path),'report.txt'); self.generate_report(out)
+                    print('บันทึกและออก...')
+                    self.close()
+                    break
             except Exception as e:
                 print('! error:', e)
 
