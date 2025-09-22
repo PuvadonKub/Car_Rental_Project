@@ -1,5 +1,5 @@
 Car Rent System — Summary Report (Sample)
-Generated At : 2025-09-15 21:02:09 (+0700)
+Generated At : 2025-09-22 21:38:37 (+0700)
 App Version  : 1.0
 Endianness   : Little-Endian
 Encoding     : UTF-8 (fixed-length)
@@ -12,7 +12,7 @@ CarID | Plate      | Brand      | Model      | Year | Rate (THB/day) | Status | 
     4 | TH-0004    | Nissan     | Almera     | 2021 |        2000.00 | Active | Yes
     5 | TH-0005    | Honda      | Jazz       | 2018 |        2500.00 | Active | No 
     6 | TH-0006    | Mitsu      | Xpander    | 2020 |        1200.00 | Active | No 
-    7 | TH-0007    | Honda      | Jazz       | 2025 |         900.00 | Active | Yes
+    7 | TH-0007    | Honda      | Jazz       | 2025 |         900.00 | Active | No 
     8 | TH-0008    | Mazda      | 3          | 2017 |         900.00 | Active | No 
     9 | TH-0009    | Mazda      | 2          | 2017 |        1200.00 | Active | No 
    10 | TH-0010    | Toyota     | Vios       | 2024 |         900.00 | Active | No 
@@ -31,8 +31,8 @@ Summary (นับเฉพาะสถานะ Active)
 - Total Cars (records) : 20
 - Active Cars          : 20
 - Deleted Cars         : 0
-- Currently Rented     : 5
-- Available Now        : 15
+- Currently Rented     : 4
+- Available Now        : 16
 
 Rate Statistics (THB/day, Active only)
 - Min : 900.00
