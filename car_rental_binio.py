@@ -552,7 +552,8 @@ class App:
                     out=os.path.join(os.path.dirname(self.customers.path),'report.txt'); self.generate_report(out)
                     print('บันทึกและออก...')
                     self.close()
-                    break
+                else:
+                    print('โปรดใส่ตัวเลขตามที่ระบุ :D')
             except Exception as e:
                 print('! error:', e)
 
