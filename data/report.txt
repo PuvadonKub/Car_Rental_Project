@@ -1,31 +1,31 @@
 Car Rent System — Summary Report (Sample)
-Generated At : 2025-09-24 11:37:53 (+0700)
-App Version  : 1.0
+Generated At : 2025-09-24 11:39:18 (+0700)
+App Version  : 1.1
 Endianness   : Little-Endian
 Encoding     : UTF-8 (fixed-length)
 
-CarID | Plate      | Brand      | Model      | Year | Rate (THB/day) | Status   | Rented
-----------------------------------------------------------------------------------------
-    1 | TH-0001    | Mitsu      | Mirage     | 2025 |         900.00 | Active   | No 
-    2 | TH-0002    | Toyota     | Altis      | 2025 |        1500.00 | Deleted  | No 
-    3 | TH-0003    | Mazda      | 2          | 2021 |        1800.00 | Active   | No 
-    4 | TH-0004    | Nissan     | Almera     | 2021 |        2000.00 | Active   | Yes
-    5 | TH-0005    | Honda      | Jazz       | 2018 |        2500.00 | Active   | No 
-    6 | TH-0006    | Mitsu      | Xpander    | 2020 |        1200.00 | Active   | No 
-    7 | TH-0007    | Honda      | Jazz       | 2025 |         900.00 | Active   | No 
-    8 | TH-0008    | Mazda      | 3          | 2017 |         900.00 | Active   | No 
-    9 | TH-0009    | Mazda      | 2          | 2017 |        1200.00 | Active   | No 
-   10 | TH-0010    | Toyota     | Vios       | 2024 |         900.00 | Active   | No 
-   11 | TH-0011    | Mitsu      | Attrage    | 2019 |        2500.00 | Active   | Yes
-   12 | TH-0012    | Mitsu      | Attrage    | 2021 |        2000.00 | Active   | No 
-   13 | TH-0013    | Mitsu      | Mirage     | 2020 |        2000.00 | Active   | No 
-   14 | TH-0014    | Honda      | Jazz       | 2021 |        1800.00 | Active   | Yes
-   15 | TH-0015    | Mazda      | 3          | 2025 |        1800.00 | Active   | No 
-   16 | TH-0016    | Honda      | City       | 2018 |        1500.00 | Active   | No 
-   17 | TH-0017    | Mitsu      | Xpander    | 2020 |        2000.00 | Active   | No 
-   18 | TH-0018    | Toyota     | Vios       | 2017 |        1200.00 | Active   | No 
-   19 | TH-0019    | Toyota     | Yaris      | 2018 |        2000.00 | Active   | No 
-   20 | TH-0020    | Mazda      | CX-30      | 2024 |        1200.00 | Active   | Yes
+CarID | Plate      | Brand      | Model      | Year | Rate (THB/day) | Status    | Rented
+-----------------------------------------------------------------------------------------
+    1 | TH-0001    | Mitsu      | Mirage     | 2025 |         900.00 | Active    | No 
+    2 | TH-0002    | Toyota     | Altis      | 2025 |        1500.00 | Deleted   | No 
+    3 | TH-0003    | Mazda      | 2          | 2021 |        1800.00 | Active    | No 
+    4 | TH-0004    | Nissan     | Almera     | 2021 |        2000.00 | Active    | Yes
+    5 | TH-0005    | Honda      | Jazz       | 2018 |        2500.00 | Active    | No 
+    6 | TH-0006    | Mitsu      | Xpander    | 2020 |        1200.00 | Active    | No 
+    7 | TH-0007    | Honda      | Jazz       | 2025 |         900.00 | Active    | No 
+    8 | TH-0008    | Mazda      | 3          | 2017 |         900.00 | Active    | No 
+    9 | TH-0009    | Mazda      | 2          | 2017 |        1200.00 | Active    | No 
+   10 | TH-0010    | Toyota     | Vios       | 2024 |         900.00 | Active    | No 
+   11 | TH-0011    | Mitsu      | Attrage    | 2019 |        2500.00 | Active    | Yes
+   12 | TH-0012    | Mitsu      | Attrage    | 2021 |        2000.00 | Active    | No 
+   13 | TH-0013    | Mitsu      | Mirage     | 2020 |        2000.00 | Active    | No 
+   14 | TH-0014    | Honda      | Jazz       | 2021 |        1800.00 | Active    | Yes
+   15 | TH-0015    | Mazda      | 3          | 2025 |        1800.00 | Active    | No 
+   16 | TH-0016    | Honda      | City       | 2018 |        1500.00 | Active    | No 
+   17 | TH-0017    | Mitsu      | Xpander    | 2020 |        2000.00 | Active    | No 
+   18 | TH-0018    | Toyota     | Vios       | 2017 |        1200.00 | Active    | No 
+   19 | TH-0019    | Toyota     | Yaris      | 2018 |        2000.00 | Active    | No 
+   20 | TH-0020    | Mazda      | CX-30      | 2024 |        1200.00 | Active    | Yes
 
 Summary (นับเฉพาะสถานะ Active)
 - Total Cars (records) : 20
