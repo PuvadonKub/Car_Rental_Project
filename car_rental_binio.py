@@ -485,13 +485,13 @@ class App:
             'Encoding     : UTF-8 (fixed-length)',
             ''
         ]
-        th=f"{'CarID':>5} | {'Plate':<10} | {'Brand':<10} | {'Model':<10} | {'Year':>4} | {'Rate (THB/day)':>14} | {'Status':<6} | {'Rented':<3}"
+        th=f"{'CarID':>5} | {'Plate':<10} | {'Brand':<10} | {'Model':<10} | {'Year':>4} | {'Rate (THB/day)':>14} | {'Status':<9} | {'Rented':<3}"
         lines+=[th,'-'*len(th)]
         total=active=deleted=rented=avail=0; rates=[]; by_brand={}
         for _,raw in self.cars.iter_all():
             total+=1; c=self.cars.unpack(raw); is_active=(raw[0]==1)
             status='Active' if is_active else 'Deleted'; rented_str='Yes' if (is_active and c['status']==1) else 'No'
-            lines.append(f"{c['car_id']:>5} | {c['license']:<10.10} | {c['brand']:<10.10} | {c['model']:<10.10} | {c['year']:>4} | {c['rate_cents']/100:>14.2f} | {status:<6} | {rented_str:<3}")
+            lines.append(f"{c['car_id']:>5} | {c['license']:<10.10} | {c['brand']:<10.10} | {c['model']:<10.10} | {c['year']:>4} | {c['rate_cents']/100:>14.2f} | {status:<9} | {rented_str:<3}")
             if is_active:
                 active+=1; rates.append(c['rate_cents']); by_brand[c['brand']]=by_brand.get(c['brand'],0)+1
                 if c['status']==1: rented+=1
@@ -552,6 +552,7 @@ class App:
                     out=os.path.join(os.path.dirname(self.customers.path),'report.txt'); self.generate_report(out)
                     print('บันทึกและออก...')
                     self.close()
+                    break
                 else:
                     print('โปรดใส่ตัวเลขตามที่ระบุ :D')
             except Exception as e:
