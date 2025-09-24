@@ -485,7 +485,7 @@ class App:
             'Encoding     : UTF-8 (fixed-length)',
             ''
         ]
-        th=f"{'CarID':>5} | {'Plate':<10} | {'Brand':<10} | {'Model':<10} | {'Year':>4} | {'Rate (THB/day)':>14} | {'Status':<9} | {'Rented':<3}"
+        th=f"{'CarID':>5} | {'Plate':<10} | {'Brand':<10} | {'Model':<10} | {'Year':>4} | {'Rate (THB/day)':>14} | {'Status':<9} | {'Rented':<3} | {"customers":<20}"
         lines+=[th,'-'*len(th)]
         total=active=deleted=rented=avail=0; rates=[]; by_brand={}
         for _,raw in self.cars.iter_all():
