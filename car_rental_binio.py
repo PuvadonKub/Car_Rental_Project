@@ -359,6 +359,16 @@ class App:
         if not is_plate(plate) or not is_year(year) or rateb < 0 or odo < 0: print('! ข้อมูลไม่ถูกต้อง'); return
         self.cars.update_record(car_id, self.cars.pack(1, car_id, plate, brand, model, year, int(round(rateb*100)), odo, stat, now_ts()))
         print('* อัปเดตรถแล้ว')
+        if stat == 3:  # retired
+            has_open = False
+            for _, rawc in self.contracts.iter_active():
+                cc = self.contracts.unpack(rawc)
+                if cc['car_id'] == car_id and cc['returned'] == 0:
+                    has_open = True
+                    break
+            if has_open:
+                print('! รถคันนี้ยังมีสัญญาเช่าเปิดอยู่ ห้ามตั้งเป็น retired')
+                return
 
     def return_car(self):
         try:
@@ -371,6 +381,13 @@ class App:
         r = self.contracts.unpack(raw)
         if r['returned'] == 1: print('! ปิดสัญญาแล้ว'); return
         if ret < r['rent_ymd']: print('! วันที่ผิด'); return
+        new_status = 0 if car['status'] == 1 else car['status']
+        self.cars.update_record(
+            car['car_id'],
+            self.cars.pack(
+                1, car['car_id'], car['license'], car['brand'], car['model'],
+                car['year'], car['rate_cents'], car['odometer_km'],
+                new_status, now_ts()))
         car = self.cars.unpack(self.cars.read_record(r['car_id']))
         def to_dt(n:int) -> date: return date(n//10000, (n//100)%100, n%100)
         days = (to_dt(ret) - to_dt(r['rent_ymd'])).days or 1
@@ -395,6 +412,7 @@ class App:
             print('! รถกำลังเช่า ลบไม่ได้'); return
         try: self.cars.delete_record(car_id); print('- ลบรถแล้ว')
         except Exception as e: print('!',e)
+        
 
     def delete_contract(self):
         try: rid = int(input('rent_id: '))
@@ -404,7 +422,9 @@ class App:
 
     # ---------- View ----------
     def view_single(self):
-        t = input('ชนิด (customer/car/contract): ').strip().lower()
+        t = input('ชนิด (customer/car/contract, 0=Back): ').strip().lower()
+        if t in ('', '0', 'b', 'back'):
+            return
         try: i = int(input('id: '))
         except Exception: print('! อินพุตไม่ถูกต้อง'); return
         if t.startswith('cust'):
@@ -424,45 +444,76 @@ class App:
             print(f"[Contract] id={r['rent_id']} cus_id={r['cus_id']} car_id={r['car_id']} rent={int_to_ymd(r['rent_ymd'])} return={int_to_ymd(r['return_ymd'])} total={r['total_cents']/100:.2f} returned={r['returned']}")
 
     def view_all(self):
-        t = input('ชนิด (customer/car/contract): ').strip().lower()
+        t = input('ชนิด (customer/car/contract, 0=Back): ').strip().lower()
+        if t in ('', '0', 'b', 'back'):
+            return
         if t.startswith('cust'):
-            for _,raw in self.customers.iter_active():
-                r=self.customers.unpack(raw)
+            for _, raw in self.customers.iter_active():
+                r = self.customers.unpack(raw)
                 print(f"{r['cus_id']:>4} | {r['name']:<24} | {r['phone']} | {r['birth_ymd']} | {r['gender']}")
         elif t.startswith('car'):
-            for _,raw in self.cars.iter_active():
-                r=self.cars.unpack(raw)
-                print(f"{r['car_id']:>4} | {r['license']:<10} | {r['brand']:<10} | {r['model']:<10} | {r['year']} | {r['rate_cents']/100:.2f} | {CAR_STATUS[r['status']]:<10}")
+            for _, raw in self.cars.iter_active():
+                r = self.cars.unpack(raw)
+                print(f"{r['car_id']:>4} | {r['license']:<10} | {r['brand']:<10} | {r['model']:<10} | "
+                    f"{r['year']} | {r['rate_cents']/100:<10.2f} | {CAR_STATUS[r['status']]:<10}")
+        elif t.startswith('cont'):
+            for _, raw in self.contracts.iter_active():
+                r = self.contracts.unpack(raw)
+                print(f"{r['rent_id']:>4} | cus={r['cus_id']:<3} car={r['car_id']:<3} | "
+                    f"{int_to_ymd(r['rent_ymd'])}->{int_to_ymd(r['return_ymd'])} | {r['total_cents']/100:.2f}")
         else:
-            for _,raw in self.contracts.iter_active():
-                r=self.contracts.unpack(raw)
-                print(f"{r['rent_id']:>4} | cus={r['cus_id']:<3} car={r['car_id']:<3} | {int_to_ymd(r['rent_ymd'])}->{int_to_ymd(r['return_ymd'])} | {r['total_cents']/100:.2f}")
+            print("เขียนไม่ถูกต้อง")
 
     def view_filter(self):
-        t = input('ชนิด (customer/car/contract): ').strip().lower()
+        t = input('ชนิด (customer/car/contract, 0=Back): ').strip().lower()
+        if t in ('', '0', 'b', 'back'):
+            return
         if t.startswith('cust'):
             q = input('ค้นหาชื่อ: ').strip().lower()
-            for _,raw in self.customers.iter_active():
-                r=self.customers.unpack(raw)
-                if q in r['name'].lower(): print(f"{r['cus_id']:>4} | {r['name']}")
+            for _, raw in self.customers.iter_active():
+                r = self.customers.unpack(raw)
+                if q in r['name'].lower():
+                    print(f"{r['cus_id']:>4} | {r['name']}")
+
         elif t.startswith('car'):
-            st = CAR_STATUS_REV.get(input('สถานะ (available/rented/maintenance/retired): ').strip().lower(), None)
-            for _,raw in self.cars.iter_active():
-                r=self.cars.unpack(raw)
-                if st is None or r['status']==st:
-                    print(f"{r['car_id']:>4} | {r['license']:<10} | {r['brand']:<10} | {r['model']:<10} | {r['year']} | {r['rate_cents']/100:.2f} | {CAR_STATUS[r['status']]:<10}")
+            raw_in = input('สถานะ (available/rented/maintenance/retired หรือเว้นว่าง): ').strip().lower()
+            st_code = None  # None = ไม่กรอง
+            if raw_in:
+                if raw_in.isdigit():
+                    v = int(raw_in)
+                    if v in CAR_STATUS:
+                        st_code = v
+                else:
+                    # ชื่อเต็มก่อน
+                    exact = [code for code, label in CAR_STATUS.items() if label == raw_in]
+                    if exact:
+                        st_code = exact[0]
+                    else:
+                        # prefix match (avai/ren/main/ret)
+                        matched = [code for code, label in CAR_STATUS.items() if label.startswith(raw_in)]
+                        if len(matched) == 1:
+                            st_code = matched[0]
+                        elif len(matched) > 1:
+                            print("คำค้นกำกวม: ", ', '.join(CAR_STATUS[m] for m in matched))
+                            return
+            for _, raw in self.cars.iter_active():
+                r = self.cars.unpack(raw)
+                if st_code is None or r['status'] == st_code:
+                    print(f"{r['car_id']:>4} | {r['license']:<10} | {r['brand']:<10} | {r['model']:<10} | "
+                        f"{r['year']} | {r['rate_cents']/100:<10.2f} | {CAR_STATUS[r['status']]:<10}")
         elif t.startswith('cont'):
             try:
-                a_str,b_str = input('ช่วง FROM,TO (YYYY-MM-DD,YYYY-MM-DD): ').split(',')
-                a,b = ymd_to_int(a_str.strip()), ymd_to_int(b_str.strip())
+                a_str, b_str = input('ช่วง FROM,TO (YYYY-MM-DD,YYYY-MM-DD): ').split(',')
+                a, b = ymd_to_int(a_str.strip()), ymd_to_int(b_str.strip())
             except Exception:
                 print('รูปแบบวันที่ไม่ถูกต้อง'); return
-            for _,raw in self.contracts.iter_active():
-                r=self.contracts.unpack(raw)
+            for _, raw in self.contracts.iter_active():
+                r = self.contracts.unpack(raw)
                 if a <= r['rent_ymd'] <= b:
                     print(f"{r['rent_id']:>4} | {int_to_ymd(r['rent_ymd'])}")
         else:
             print("เขียนไม่ถูกต้อง")
+
 
     def view_stats(self):
         cnt = {k:0 for k in CAR_STATUS}
@@ -475,29 +526,78 @@ class App:
 
     # ---------- Report ----------
     def generate_report(self, out_path: str):
-        lines=[]
-        ts=datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S (%z)')
-        lines+=[
+        # --- รวบรวม open contracts -> car_id -> contract ล่าสุด ---
+        open_by_car = {}
+        for _, raw in self.contracts.iter_active():
+            c = self.contracts.unpack(raw)
+            if c['returned'] == 0:
+                prev = open_by_car.get(c['car_id'])
+                if (prev is None) or (c['rent_ymd'] > prev['rent_ymd']):
+                    open_by_car[c['car_id']] = c
+
+        # cache ชื่อลูกค้า ลดการอ่านไฟล์ซ้ำ
+        _name_cache = {}
+        def customer_name(cus_id: int) -> str:
+            if cus_id in _name_cache: 
+                return _name_cache[cus_id]
+            raw = self.customers.read_record(cus_id)
+            if not raw:
+                _name_cache[cus_id] = f"cus#{cus_id}"
+            else:
+                _name_cache[cus_id] = self.customers.unpack(raw)['name']
+            return _name_cache[cus_id]
+
+        lines = []
+        ts = datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S (%z)')
+        lines += [
             'Car Rent System — Summary Report (Sample)',
             f'Generated At : {ts}',
-            'App Version  : 1.1',
+            'App Version  : 1.0',
             'Endianness   : Little-Endian',
             'Encoding     : UTF-8 (fixed-length)',
             ''
         ]
-        th=f"{'CarID':>5} | {'Plate':<10} | {'Brand':<10} | {'Model':<10} | {'Year':>4} | {'Rate (THB/day)':>14} | {'Status':<9} | {'Rented':<3} | {"customers":<20}"
-        lines+=[th,'-'*len(th)]
-        total=active=deleted=rented=avail=0; rates=[]; by_brand={}
-        for _,raw in self.cars.iter_all():
-            total+=1; c=self.cars.unpack(raw); is_active=(raw[0]==1)
-            status='Active' if is_active else 'Deleted'; rented_str='Yes' if (is_active and c['status']==1) else 'No'
-            lines.append(f"{c['car_id']:>5} | {c['license']:<10.10} | {c['brand']:<10.10} | {c['model']:<10.10} | {c['year']:>4} | {c['rate_cents']/100:>14.2f} | {status:<9} | {rented_str:<3}")
+
+        # เพิ่มคอลัมน์ Renter
+        th = (f"{'CarID':>5} | {'Plate':<10} | {'Brand':<10} | {'Model':<10} | "
+            f"{'Year':>4} | {'Rate (THB/day)':>14} | {'Record':<7} | {'Rented':<3} | {'Renter':<20}")
+        lines += [th, '-' * len(th)]
+
+        total = active = deleted = rented = avail = 0
+        rates = []
+        by_brand = {}
+
+        for _, raw in self.cars.iter_all():
+            total += 1
+            c = self.cars.unpack(raw)
+            is_active = (raw[0] == 1)
+
+            record_state = 'Active' if is_active else 'Deleted'
+            is_rented_now = (is_active and c['status'] == 1)
+
+            renter_name = ''
+            if is_rented_now:
+                oc = open_by_car.get(c['car_id'])
+                renter_name = customer_name(oc['cus_id']) if oc else '(unknown)'
+
+            lines.append(
+                f"{c['car_id']:>5} | {c['license']:<10.10} | {c['brand']:<10.10} | {c['model']:<10.10} | "
+                f"{c['year']:>4} | {c['rate_cents']/100:>14.2f} | {record_state:<7} | "
+                f"{'Yes' if is_rented_now else 'No':<3} | {renter_name:<20.20}"
+            )
+
             if is_active:
-                active+=1; rates.append(c['rate_cents']); by_brand[c['brand']]=by_brand.get(c['brand'],0)+1
-                if c['status']==1: rented+=1
-                if c['status']==0: avail+=1
-        deleted=total-active
-        lines+=[
+                active += 1
+                rates.append(c['rate_cents'])
+                by_brand[c['brand']] = by_brand.get(c['brand'], 0) + 1
+                if is_rented_now:
+                    rented += 1
+                if c['status'] == 0:
+                    avail += 1
+
+        deleted = total - active
+
+        lines += [
             '',
             'Summary (นับเฉพาะสถานะ Active)',
             f'- Total Cars (records) : {total}',
@@ -507,8 +607,9 @@ class App:
             f'- Available Now        : {avail}',
             ''
         ]
+
         if rates:
-            lines+=[
+            lines += [
                 'Rate Statistics (THB/day, Active only)',
                 f"- Min : {min(rates)/100:,.2f}",
                 f"- Max : {max(rates)/100:,.2f}",
@@ -516,47 +617,100 @@ class App:
                 ''
             ]
         else:
-            lines+=[
+            lines += [
                 'Rate Statistics (THB/day, Active only)',
-                '- Min : 0.00','- Max : 0.00','- Avg : 0.00',''
+                '- Min : 0.00', '- Max : 0.00', '- Avg : 0.00', ''
             ]
+
         lines.append('Cars by Brand (Active only)')
         if by_brand:
-            for b in sorted(by_brand): lines.append(f"- {b} : {by_brand[b]}")
+            for b in sorted(by_brand):
+                lines.append(f"- {b} : {by_brand[b]}")
         else:
             lines.append('(no active cars)')
-        with open(out_path,'w',encoding='utf-8') as f: f.write('\n'.join(lines)+'\n')
+
+        # --- สรุปรายการที่เช่าอยู่พร้อมชื่อผู้เช่า ---
+        lines += ['', 'Open Rentals (รายละเอียด)']
+        if open_by_car:
+            lines.append(f"{'RentID':>6} | {'CarID':>5} | {'Plate':<10} | {'Customer':<24} | {'Rent Date':<10}")
+            lines.append('-' * 64)
+            for car_id, oc in sorted(open_by_car.items(), key=lambda kv: (kv[1]['rent_ymd'], kv[0])):
+                car_raw = self.cars.read_record(car_id)
+                plate = self.cars.unpack(car_raw)['license'] if car_raw else f"car#{car_id}"
+                cname = customer_name(oc['cus_id'])
+                lines.append(f"{oc['rent_id']:>6} | {car_id:>5} | {plate:<10.10} | {cname:<24.24} | {int_to_ymd(oc['rent_ymd']):<10}")
+        else:
+            lines.append('(none)')
+
+        with open(out_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines) + '\n')
         print('* เขียนรายงานที่', out_path)
 
     # ---------- Menu ----------
     def run(self):
         while True:
-            print("\n===== CarRent-BinIO =====\n1) Add  2) Update  3) Delete  4) View  5) Report  0) Exit")
-            c=(input('เลือก: ') or '0').strip()
+            print("\n===== CarRent-BinIO =====")
+            print("1) Add  2) Update  3) Delete  4) View  5) Report  0) Exit")
+            c = (input('เลือก: ') or '0').strip()
             try:
-                if c=='1':
-                    print("\n1) Customer 2) Car 3) Contract")
-                    {'1':self.add_customer,'2':self.add_car,'3':self.add_contract}.get(input('เลือก: ').strip(),'')()
-                elif c=='2':
-                    print("\n1) Customer 2) Car 3) Return Car")
-                    {'1':self.update_customer,'2':self.update_car,'3':self.return_car}.get(input('เลือก: ').strip(),'')()
-                elif c=='3':
-                    print("\n1) Customer 2) Car 3) Contract")
-                    {'1':self.delete_customer,'2':self.delete_car,'3':self.delete_contract}.get(input('เลือก: ').strip(),'')()
-                elif c=='4':
-                    print("\n1) เดี่ยว 2) ทั้งหมด 3) กรอง 4) สถิติ")
-                    {'1':self.view_single,'2':self.view_all,'3':self.view_filter,'4':self.view_stats}.get(input('เลือก: ').strip(),'')()
-                elif c=='5':
-                    out=os.path.join(os.path.dirname(self.customers.path),'report.txt'); self.generate_report(out)
-                elif c=='0':
-                    out=os.path.join(os.path.dirname(self.customers.path),'report.txt'); self.generate_report(out)
+                if c == '1':
+                    # --- Add submenu ---
+                    while True:
+                        print("\n[Add] 1) Customer 2) Car 3) Contract  0) Back")
+                        ch = input('เลือก: ').strip().lower()
+                        if ch in ('0', 'b', 'back'): break
+                        {'1': self.add_customer,
+                        '2': self.add_car,
+                        '3': self.add_contract}.get(ch, lambda: print('ตัวเลือกไม่ถูกต้อง'))()
+
+                elif c == '2':
+                    # --- Update submenu ---
+                    while True:
+                        print("\n[Update] 1) Customer 2) Car 3) Return Car  0) Back")
+                        ch = input('เลือก: ').strip().lower()
+                        if ch in ('0', 'b', 'back'): break
+                        {'1': self.update_customer,
+                        '2': self.update_car,
+                        '3': self.return_car}.get(ch, lambda: print('ตัวเลือกไม่ถูกต้อง'))()
+
+                elif c == '3':
+                    # --- Delete submenu ---
+                    while True:
+                        print("\n[Delete] 1) Customer 2) Car 3) Contract  0) Back")
+                        ch = input('เลือก: ').strip().lower()
+                        if ch in ('0', 'b', 'back'): break
+                        {'1': self.delete_customer,
+                        '2': self.delete_car,
+                        '3': self.delete_contract}.get(ch, lambda: print('ตัวเลือกไม่ถูกต้อง'))()
+
+                elif c == '4':
+                    # --- View submenu ---
+                    while True:
+                        print("\n[View] 1) เดี่ยว 2) ทั้งหมด 3) กรอง 4) สถิติ  0) Back")
+                        ch = input('เลือก: ').strip().lower()
+                        if ch in ('0', 'b', 'back'): break
+                        {'1': self.view_single,
+                        '2': self.view_all,
+                        '3': self.view_filter,
+                        '4': self.view_stats}.get(ch, lambda: print('ตัวเลือกไม่ถูกต้อง'))()
+
+                elif c == '5':
+                    out = os.path.join(os.path.dirname(self.customers.path), 'report.txt')
+                    self.generate_report(out)
+
+                elif c == '0':
+                    out = os.path.join(os.path.dirname(self.customers.path), 'report.txt')
+                    self.generate_report(out)
                     print('บันทึกและออก...')
                     self.close()
                     break
+
                 else:
-                    print('โปรดใส่ตัวเลขตามที่ระบุ :D')
+                    print('ตัวเลือกไม่ถูกต้อง')
+
             except Exception as e:
                 print('! error:', e)
+
 
 # ----------------------------
 # main
