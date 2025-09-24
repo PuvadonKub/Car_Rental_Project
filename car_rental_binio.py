@@ -480,7 +480,7 @@ class App:
         lines+=[
             'Car Rent System — Summary Report (Sample)',
             f'Generated At : {ts}',
-            'App Version  : 1.0',
+            'App Version  : 1.1',
             'Endianness   : Little-Endian',
             'Encoding     : UTF-8 (fixed-length)',
             ''
