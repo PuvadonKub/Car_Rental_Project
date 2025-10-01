@@ -24,8 +24,7 @@ INDEX_SLOT_SIZE = 16
 HEADER_FMT = E + '4s B B H I I I I I i I 92x'   # 128B
 INDEX_FMT  = E + 'I I 8x'                        # 16B
 TOMBSTONE_KEY = 0xFFFFFFFF                       # ทำ tombstone ตอนลบ index slot
-
-# Record format (ต้องตรงกับสคริปต์ seed)
+# Record format
 CUST_FMT = E + 'B I 13s 50s 10s I B 45x'; CUST_SIZE=128; CUST_PAD=83
 CARS_FMT = E + 'B I 12s 12s 16s H I I B I 68x'; CARS_SIZE=128; CARS_PAD=60
 CONT_FMT = E + 'B I I I I I I B 38x';           CONT_SIZE=64;  CONT_PAD=26
@@ -116,12 +115,15 @@ class BinTable:
         self.h.updated_at = now_ts(); self.f.seek(0); self.f.write(self.h.pack()); self._sync()
 
     # --- index helpers ---
-    def _index_ofs(self, slot: int) -> int: return HEADER_SIZE + slot*INDEX_SLOT_SIZE
+    def _index_ofs(self, slot: int) -> int: 
+        return HEADER_SIZE + slot*INDEX_SLOT_SIZE
     def _read_slot(self, slot: int) -> IndexSlot:
-        self.f.seek(self._index_ofs(slot)); return IndexSlot.unpack(self.f.read(INDEX_SLOT_SIZE))
+        self.f.seek(self._index_ofs(slot)); 
+        return IndexSlot.unpack(self.f.read(INDEX_SLOT_SIZE))
     def _write_slot(self, slot: int, slotval: IndexSlot) -> None:
         self.f.seek(self._index_ofs(slot)); self.f.write(slotval.pack())
-    def _hash(self, key: int) -> int: return key % self.h.index_slots
+    def _hash(self, key: int) -> int: 
+        return key % self.h.index_slots
 
     def _find_slot_for_insert(self, key: int) -> int:
         """หา slot สำหรับ insert (reuse tombstone ถ้ามี)"""
@@ -322,7 +324,8 @@ class App:
         if not self.customers.read_record(cus_id): print('! ไม่พบลูกค้า'); return
         rid = self.contracts.next_id()
         self.contracts.add_record(rid, self.contracts.pack(1, rid, cus_id, car_id, rent, 0, 0, 0))
-        self.cars.update_record(car_id, self.cars.pack(1, car['car_id'], car['license'], car['brand'], car['model'], car['year'], car['rate_cents'], car['odometer_km'], 1, now_ts()))
+        self.cars.update_record(car_id, self.cars.pack(1, car['car_id'], car['license'], car['brand'], car['model'], 
+                                                       car['year'], car['rate_cents'], car['odometer_km'], 1, now_ts()))
         print(f'+ เปิดสัญญา rent_id={rid}')
 
     # ---------- Update ----------
@@ -365,7 +368,6 @@ class App:
             r['status']
         )
 
-        # ---------- Consistency guard vs. contracts ----------
         old_status = r['status']
         new_status = stat
 
@@ -499,17 +501,20 @@ class App:
             raw = self.customers.read_record(i); 
             if not raw: print('! ไม่พบ'); return
             r = self.customers.unpack(raw)
-            print(f"[Customer] id={r['cus_id']} name={r['name']} id_card={r['id_card']} phone={r['phone']} birth={int_to_ymd(r['birth_ymd'])} gender={r['gender']}")
+            print(f"[Customer] id={r['cus_id']} name={r['name']} id_card={r['id_card']} phone={r['phone']} "
+                  f"birth={int_to_ymd(r['birth_ymd'])} gender={r['gender']}")
         elif t.startswith('car'):
             raw = self.cars.read_record(i)
             if not raw: print('! ไม่พบ'); return
             r = self.cars.unpack(raw)
-            print(f"[Car] id={r['car_id']} plate={r['license']} brand={r['brand']} model={r['model']} year={r['year']} rate={r['rate_cents']/100:.2f} status={CAR_STATUS[r['status']]}")
+            print(f"[Car] id={r['car_id']} plate={r['license']} brand={r['brand']} model={r['model']} "
+                  f"year={r['year']} rate={r['rate_cents']/100:.2f} status={CAR_STATUS[r['status']]}")
         else:
             raw = self.contracts.read_record(i)
             if not raw: print('! ไม่พบ'); return
             r = self.contracts.unpack(raw)
-            print(f"[Contract] id={r['rent_id']} cus_id={r['cus_id']} car_id={r['car_id']} rent={int_to_ymd(r['rent_ymd'])} return={int_to_ymd(r['return_ymd'])} total={r['total_cents']/100:.2f} returned={r['returned']}")
+            print(f"[Contract] id={r['rent_id']} cus_id={r['cus_id']} car_id={r['car_id']} rent={int_to_ymd(r['rent_ymd'])} "
+                  f"return={int_to_ymd(r['return_ymd'])} total={r['total_cents']/100:.2f} returned={r['returned']}")
 
     def view_all(self):
         t = input('ชนิด (customer/car/contract, 0=Back): ').strip().lower()
@@ -771,7 +776,6 @@ class App:
                         {'1': self.add_customer,
                         '2': self.add_car,
                         '3': self.add_contract}.get(ch, lambda: print('ตัวเลือกไม่ถูกต้อง'))()
-
                 elif c == '2':
                     # --- Update submenu ---
                     while True:
@@ -781,7 +785,6 @@ class App:
                         {'1': self.update_customer,
                         '2': self.update_car,
                         '3': self.return_car}.get(ch, lambda: print('ตัวเลือกไม่ถูกต้อง'))()
-
                 elif c == '3':
                     # --- Delete submenu ---
                     while True:
@@ -791,9 +794,7 @@ class App:
                         {'1': self.delete_customer,
                         '2': self.delete_car,
                         '3': self.delete_contract}.get(ch, lambda: print('ตัวเลือกไม่ถูกต้อง'))()
-
                 elif c == '4':
-                    # --- View submenu ---
                     while True:
                         print("\n[View] 1) เดี่ยว 2) ทั้งหมด 3) กรอง 4) สถิติ  0) Back")
                         ch = input('เลือก: ').strip().lower()
@@ -802,7 +803,6 @@ class App:
                         '2': self.view_all,
                         '3': self.view_filter,
                         '4': self.view_stats}.get(ch, lambda: print('ตัวเลือกไม่ถูกต้อง'))()
-
                 elif c == '5':
                     out = os.path.join(os.path.dirname(self.customers.path), 'report.txt')
                     self.generate_report(out)
@@ -813,7 +813,6 @@ class App:
                     print('บันทึกและออก...')
                     self.close()
                     break
-
                 else:
                     print('ตัวเลือกไม่ถูกต้อง')
 
