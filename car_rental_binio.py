@@ -10,7 +10,10 @@ CarRent-BinIO (clean)
 เข้ากันได้กับ seed_sample_data.py (ฟอร์แมต identical)
 """
 from __future__ import annotations
-import os, sys, struct, argparse
+import os
+import sys
+import struct
+import argparse
 from dataclasses import dataclass
 from datetime import datetime, date
 from typing import Optional, Iterable, Tuple, Dict, Any
@@ -156,7 +159,6 @@ class BinTable:
             j = (start + i) % self.h.index_slots
             sl = self._read_slot(j)
             if sl.key == 0: return None
-            if sl.key == key: return j
         return None
 
     # --- record space ---
@@ -520,23 +522,29 @@ class App:
         t = input('ชนิด (customer/car/contract, 0=Back): ').strip().lower()
         if t in ('', '0', 'b', 'back'):
             return
+
         if t.startswith('cust'):
+            gender_map = {0: 'unk', 1: 'male', 2: 'female'}
+            print(f"{'ID':>4} | {'Name':<24} | {'Phone':<10} | {'Birth':<10} | {'Gender'}")
+            print('-' * 60)
             for _, raw in self.customers.iter_active():
                 r = self.customers.unpack(raw)
-                if {r['gender']} == 0:
-                    gend = "unk"
-                elif {r['gender']} == 1:
-                    gend = "male"
-                elif {r['gender']} == 0:
-                    gend = "female"
-                print(f"{r['cus_id']:>4} | {r['name']:<24} | {r['phone']} | {r['birth_ymd']} | {gend}")
+                gend = gender_map.get(r['gender'], 'unk')
+                print(f"{r['cus_id']:>4} | {r['name']:<24} | {r['phone']:<10} | "
+                    f"{int_to_ymd(r['birth_ymd']):<10} | {gend}")
+
         elif t.startswith('car'):
+            print(f"{'ID':>4} | {'Plate':<10} | {'Brand':<10} | {'Model':<10} | "
+                f"{'Year':>4} | {'Rate':>10} | {'Status':<10}")
+            print('-' * 80)
             for _, raw in self.cars.iter_active():
                 r = self.cars.unpack(raw)
                 print(f"{r['car_id']:>4} | {r['license']:<10} | {r['brand']:<10} | {r['model']:<10} | "
-                    f"{r['year']} | {r['rate_cents']/100:<10.2f} | {CAR_STATUS[r['status']]:<10}")
+                    f"{r['year']:>4} | {r['rate_cents']/100:>10.2f} | {CAR_STATUS[r['status']]:<10}")
+
         elif t.startswith('cont'):
             name_cache: Dict[int, str] = {}
+
             def customer_name(cus_id: int) -> str:
                 if cus_id in name_cache:
                     return name_cache[cus_id]
@@ -546,17 +554,20 @@ class App:
                 else:
                     name_cache[cus_id] = self.customers.unpack(rawc)['name']
                 return name_cache[cus_id]
-            
-            print(f"{'Rent_ID':<7} | {'Cus_ID':<6} | {'Name':<24} | {'Car_ID':<6} | {'Rent_Time':<22} | total")
+
+            print(f"{'Rent_ID':>7} | {'Cus_ID':>6} | {'Name':<24} | {'Car_ID':>6} | "
+                f"{'Rent_Time':<22} | {'Total':>10}")
+            print('-' * 90)
             for _, raw in self.contracts.iter_active():
                 r = self.contracts.unpack(raw)
                 cname = customer_name(r['cus_id'])
                 rent_time = f"{int_to_ymd(r['rent_ymd'])}->{int_to_ymd(r['return_ymd'])}"
-                print(f"{r['rent_id']:>7} | {r['cus_id']:<6} | {cname:<24} | {r['car_id']:<6} | "
-                    f"{rent_time:<22} | {r['total_cents']/100:.2f}")
+                print(f"{r['rent_id']:>7} | {r['cus_id']:>6} | {cname:<24} | {r['car_id']:>6} | "
+                    f"{rent_time:<22} | {r['total_cents']/100:>10.2f}")
 
         else:
             print("เขียนไม่ถูกต้อง")
+
 
     def view_filter(self):
         t = input('ชนิด (customer/car/contract, 0=Back): ').strip().lower()
