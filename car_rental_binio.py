@@ -630,44 +630,26 @@ class App:
         print('Open contracts =', open_ct)
 
     def generate_report(self, out_path: str):
-        # helper function to format date without year
-        def format_date_no_year(n: int) -> str:
-            if not n: return '-'
-            y=n//10000; m=(n//100)%100; d=n%100
-            return f"{m:02d}-{d:02d}"
-        
-        # helper function to calculate days between dates
-        def calculate_days(start_ymd: int, end_ymd: int) -> int:
-            if not start_ymd or not end_ymd:
-                return 0
-            def to_dt(n:int): 
-                return date(n//10000, (n//100)%100, n%100)
-            return (to_dt(end_ymd) - to_dt(start_ymd)).days
+        fmd = lambda n: '-' if not n else f"{(n//100)%100:02d}-{n%100:02d}"
+        to_dt = lambda n: date(n//10000, (n//100)%100, n%100)
+        days_between = lambda a,b: 0 if (not a or not b) else (to_dt(b) - to_dt(a)).days
 
-        # cache ชื่อลูกค้า ลดการอ่านไฟล์ซ้ำ
-        _name_cache = {}
+        name_cache, car_cache = {}, {}
+
         def customer_name(cus_id: int) -> str:
-            if cus_id in _name_cache: 
-                return _name_cache[cus_id]
-            raw = self.customers.read_record(cus_id)
-            if not raw:
-                _name_cache[cus_id] = f"cus#{cus_id}"
-            else:
-                _name_cache[cus_id] = self.customers.unpack(raw)['name']
-            return _name_cache[cus_id]
+            if cus_id not in name_cache:
+                raw = self.customers.read_record(cus_id)
+                name_cache[cus_id] = f"cus#{cus_id}" if not raw else self.customers.unpack(raw)['name']
+            return name_cache[cus_id]
 
-        # cache ข้อมูลรถ
-        _car_cache = {}
         def car_info(car_id: int) -> dict:
-            if car_id in _car_cache:
-                return _car_cache[car_id]
-            raw = self.cars.read_record(car_id)
-            if not raw:
-                _car_cache[car_id] = {'license': f'car#{car_id}', 'brand': 'Unknown', 'model': 'Unknown', 'rate_cents': 0}
-            else:
-                _car_cache[car_id] = self.cars.unpack(raw)
-            return _car_cache[car_id]
+            if car_id not in car_cache:
+                raw = self.cars.read_record(car_id)
+                car_cache[car_id] = {'license': f'car#{car_id}', 'brand': 'Unknown', 'model': 'Unknown', 'rate_cents': 0} \
+                                    if not raw else self.cars.unpack(raw)
+            return car_cache[car_id]
 
+        # --- header รายงาน ---
         lines = []
         ts = datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S (%z)')
         lines += [
@@ -678,99 +660,72 @@ class App:
             ''
         ]
 
-        # collect all rentals (both open and closed contracts with actual rentals)
-        rentals = []
-        for _, raw in self.contracts.iter_active():
-            c = self.contracts.unpack(raw)
-            # ลิสต์แค่ที่มีคนเช่า (มี rent_ymd)
-            if c['rent_ymd'] > 0:
-                rentals.append(c)
+        # --- ส่วนรายการเช่า (ทั้งคืนแล้ว/ยังเช่าอยู่) ---
+        rentals = [c for _, raw in self.contracts.iter_active()
+                for c in [self.contracts.unpack(raw)] if c['rent_ymd'] > 0]
 
         if not rentals:
             lines.append('ไม่มีรายการเช่า')
         else:
-            # sort by rent date
             rentals.sort(key=lambda x: x['rent_ymd'])
-            
-            # header
-            lines.append(f"{'Renter':<20} | {'Plate':<10} | {'Brand':<10} | {'Model':<12} | {'Rate':>8} | {'Rent Time':<13} | {'Days':>4} | {'Amount':>10} | {'Status':<8}")
+            lines.append(f"{'Renter':<20} | {'Plate':<10} | {'Brand':<10} | {'Model':<12} | "
+                        f"{'Rate':>8} | {'Rent Time':<13} | {'Days':>4} | {'Amount':>10} | {'Status':<8}")
             lines.append('-' * 120)
 
-            total_amount = 0
+            total_amount = 0.0
+            today = datetime.now(); today_ymd = today.year*10000 + today.month*100 + today.day
 
-            for rental in rentals:
-                cname = customer_name(rental['cus_id'])
-                car = car_info(rental['car_id'])
-                
-                # กำหนด rent_time format
-                start_date = format_date_no_year(rental['rent_ymd'])
-                
-                if rental['returned'] == 1 and rental['return_ymd'] > 0:
-                    # สัญญาปิดแล้ว
-                    end_date = format_date_no_year(rental['return_ymd'])
-                    rent_time = f"{start_date}->{end_date}"
-                    days = calculate_days(rental['rent_ymd'], rental['return_ymd']) or 1
-                    amount = rental['total_cents'] / 100
-                    status = "คืนแล้ว"
+            for r in rentals:
+                c = car_info(r['car_id']); cname = customer_name(r['cus_id'])
+                start = fmd(r['rent_ymd'])
+                if r['returned'] == 1 and r['return_ymd'] > 0:
+                    end = fmd(r['return_ymd']); rent_time = f"{start}->{end}"
+                    days = days_between(r['rent_ymd'], r['return_ymd']) or 1
+                    amount = r['total_cents'] / 100; status = "คืนแล้ว"
                 else:
-                    today = datetime.now()
-                    today_ymd = today.year*10000 + today.month*100 + today.day
-                    end_date = format_date_no_year(today_ymd)
-                    rent_time = f"{start_date}->{end_date}"
-                    days = calculate_days(rental['rent_ymd'], today_ymd) or 1
-                    amount = (days * car['rate_cents']) / 100
-                    status = "เช่าอยู่"
+                    end = fmd(today_ymd); rent_time = f"{start}->{end}"
+                    days = days_between(r['rent_ymd'], today_ymd) or 1
+                    amount = (days * c['rate_cents']) / 100; status = "เช่าอยู่"
 
                 total_amount += amount
+                lines.append(f"{cname:<20.20} | {c['license']:<10.10} | {c['brand']:<10.10} | "
+                            f"{c['model']:<12.12} | {c['rate_cents']/100:>8.0f} | {rent_time:<13} | "
+                            f"{days:>4} | {amount:>10.2f} | {status:<8}")
 
-                lines.append(f"{cname:<20.20} | {car['license']:<10.10} | {car['brand']:<10.10} | "
-                           f"{car['model']:<12.12} | {car['rate_cents']/100:>8.0f} | {rent_time:<13} | "
-                           f"{days:>4} | {amount:>10.2f} | {status:<8}")
+            lines += ['', f'สรุป: {len(rentals)} รายการ', f'รวมยอดเงิน: {total_amount:,.2f} บาท']
 
-            # summary
-            lines += ['', f'สรุป: {len(rentals)} รายการ']
-            lines.append(f'รวมยอดเงิน: {total_amount:,.2f} บาท')
-
-        # เพิ่มสถิติรถยนต์
+        # --- สรุปภาพรวมรถ (Active เท่านั้น) ---
         lines += ['', 'Summary (นับเฉพาะสถานะ Active)']
-        
-        total = active = deleted = rented = avail = 0
-        by_brand = {}
-        
+        total = active = rented = avail = 0; by_brand = {}
+
         for _, raw in self.cars.iter_all():
             total += 1
-            c = self.cars.unpack(raw)
-            is_active = (raw[0] == 1)
-            
+            c = self.cars.unpack(raw); is_active = (raw[0] == 1)
             if is_active:
                 active += 1
-                # นับยี่ห้อรถ
-                brand = c['brand']
-                by_brand[brand] = by_brand.get(brand, 0) + 1
-                
-                if c['status'] == 1:  # rented
-                    rented += 1
-                elif c['status'] == 0:  # available
-                    avail += 1
-        
+                by_brand[c['brand']] = by_brand.get(c['brand'], 0) + 1
+                if c['status'] == 1: rented += 1
+                elif c['status'] == 0: avail += 1
+
         deleted = total - active
-        
-        lines.append(f'- Total Cars (records) : {total}')
-        lines.append(f'- Active Cars          : {active}')
-        lines.append(f'- Deleted Cars         : {deleted}')
-        lines.append(f'- Currently Rented     : {rented}')
-        lines.append(f'- Available Now        : {avail}')
+        lines += [
+            f'- Total Cars (records) : {total}',
+            f'- Active Cars          : {active}',
+            f'- Deleted Cars         : {deleted}',
+            f'- Currently Rented     : {rented}',
+            f'- Available Now        : {avail}'
+        ]
 
         lines += ['', 'Cars by Brand (Active only)']
         if by_brand:
-            for brand in sorted(by_brand.keys()):
-                lines.append(f'- {brand} : {by_brand[brand]}')
+            for b in sorted(by_brand): lines.append(f'- {b} : {by_brand[b]}')
         else:
             lines.append('(no active cars)')
 
         with open(out_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines) + '\n')
         print('* เขียนรายงานที่', out_path)
+
 
     def run(self):
         while True:

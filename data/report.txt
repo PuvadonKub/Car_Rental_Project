@@ -1,25 +1,25 @@
 Car Rent System — Rental Report
-Generated At : 2025-10-01 15:43:13 (+0700)
+Generated At : 2025-10-02 23:40:29 (+0700)
 
 รายการรถที่มีคนเช่า (ทั้งที่คืนแล้วและยังไม่คืน)
 
 Renter               | Plate      | Brand      | Model        |     Rate | Rent Time     | Days |     Amount | Status  
 ------------------------------------------------------------------------------------------------------------------------
 Sudarat Boonmee      | TH-0010    | Mitsu      | Mirage       |     1800 | 06-22->06-27  |    5 |    9000.00 | คืนแล้ว 
-Sudarat Inthra       | TH-0004    | Nissan     | Note         |     1200 | 07-22->10-01  |   71 |   85200.00 | เช่าอยู่
-Sudarat Inthra       | TH-0014    | Nissan     | Note         |     1200 | 07-22->10-01  |   71 |   85200.00 | เช่าอยู่
-Warin Chaiyakul      | TH-0008    | Nissan     | Note         |     1200 | 08-18->10-01  |   44 |   52800.00 | เช่าอยู่
+Sudarat Inthra       | TH-0004    | Nissan     | Note         |     1200 | 07-22->10-02  |   72 |   86400.00 | เช่าอยู่
+Sudarat Inthra       | TH-0014    | Nissan     | Note         |     1200 | 07-22->10-02  |   72 |   86400.00 | เช่าอยู่
+Warin Chaiyakul      | TH-0008    | Nissan     | Note         |     1200 | 08-18->10-02  |   45 |   54000.00 | เช่าอยู่
 Warin Chaiyakul      | TH-0018    | Nissan     | Note         |     1200 | 08-18->09-30  |   43 |   51600.00 | คืนแล้ว 
 Napat Inthra         | TH-0003    | Honda      | Jazz         |     1200 | 09-03->09-04  |    1 |    1200.00 | คืนแล้ว 
 Napat Inthra         | TH-0013    | Honda      | Jazz         |     1200 | 09-03->09-04  |    1 |    1200.00 | คืนแล้ว 
 Siriporn Chanthara   | TH-0002    | Mazda      | CX-30        |     2000 | 09-13->09-18  |    5 |   10000.00 | คืนแล้ว 
 Siriporn Chanthara   | TH-0012    | Mazda      | CX-30        |     2000 | 09-13->09-18  |    5 |   10000.00 | คืนแล้ว 
-Puvadon Wetchana     | TH-1234    | Honda      | wave-120     |      200 | 10-01->10-01  |    1 |     200.00 | เช่าอยู่
+Puvadon Wetchana     | TH-1234    | Honda      | wave-120     |      200 | 10-01->10-02  |    1 |     200.00 | เช่าอยู่
 Puvadon Wetchana     | TH-0020    | Mitsu      | Mirage       |     1800 | 10-01->10-01  |    1 |    1800.00 | คืนแล้ว 
-Puvadon Wetchana     | TG-4321    | Mazda      | 2            |     2000 | 10-01->10-01  |    1 |    2000.00 | เช่าอยู่
+Puvadon Wetchana     | TG-4321    | Mazda      | 2            |     2000 | 10-01->10-02  |    1 |    2000.00 | เช่าอยู่
 
 สรุป: 12 รายการ
-รวมยอดเงิน: 310,200.00 บาท
+รวมยอดเงิน: 313,800.00 บาท
 
 Summary (นับเฉพาะสถานะ Active)
 - Total Cars (records) : 22
@@ -33,3 +33,12 @@ Cars by Brand (Active only)
 - Mazda : 9
 - Mitsu : 4
 - Nissan : 4
+
+
+
+
+
+
+
+
+
